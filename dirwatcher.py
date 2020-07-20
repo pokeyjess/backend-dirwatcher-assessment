@@ -38,12 +38,25 @@ def signal_handler(sig_num, frame):
     # call this function when program gets a signal (see below)
 
     # log the associated signal name
-    #logger.warn('Received ' + signal.Signals(sig_num).name)
+    # logger.warn('Received ' + signal.Signals(sig_num).name)
 
 # function to watch directory
 
-# function to look for magic text
 
+def find_magic_text(filename, last_position, magic_text:
+    """
+   Function to look for magic text
+   Searches for magic text in file (from last line position)
+
+    """
+    line_number = 0
+    with open(filename) as file:
+        for line_number, line in enumerate(file):
+            if line_number >= last_position:
+                if magic_text in line:
+                    logger.info(
+                        f'Magic text: "{magic_text}", found at line: {line_number + 1} in: {filename}')
+    return line_number + 1
 
 def main():
     # Hook into these two signals from the OS
