@@ -1,5 +1,6 @@
 import logging
 import time
+import other
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +15,10 @@ logging.basicConfig(
 # use: \ for line break in format above
 logger.setLevel(logging.DEBUG)
 
-for _ in range(10):
+
+for _ in range(5):
     time.sleep(1.0)
     logger.debug("Hey this is kinda cool")
 
-
+other.func()
 #formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(name)-12s %(levelname)-8s %(message)s')

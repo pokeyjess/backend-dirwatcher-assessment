@@ -2,10 +2,10 @@
 # python dirwatcher.py  <directory to watch>  <magic text to search> -e .txt -1 5
 
 '''
-signal handler
-function to look for magic text
-logging where found text
-timestamp
+--signal handler
+--function to look for magic text
+logging where found text (currently logging kill signal)
+--timestamp
 figure out how to watch a directory
 exception handling to keep running
     when no directory found
@@ -25,6 +25,7 @@ import signal
 import time
 import logging
 import os
+import datetime
 
 exit_flag = False
 
@@ -77,9 +78,16 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     # Now my signal_handler will get called if OS sends
     # either of these to my process.
+# startup banner:
+    app_start_time = datetime.datetime.now()
+    logger.info(
+        f"\n{40 * '-'}\n Running: {__file__}\n Started on: {app_start_time.isoformat()}\n{40 * '-'}")
+# uptime, how long program has been running for
+# demo, 33 min
 
 # change print statements to logging:
 # https://www.youtube.com/watch?v=jxmzY9soFXg, last 5 min
+
     while not exit_flag:
         try:
             print(f"[{os.getpid()}] Tick...")
