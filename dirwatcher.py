@@ -85,6 +85,10 @@ def main():
 # uptime, how long program has been running for
 # demo, 33 min
 
+    uptime = datetime.datetime.now() - app_start_time
+    logger.info(
+        f"\n{40 * '-'}\n Stopped: {__file__}\n Uptime was: {str(uptime)}\n{40 * '-'}")
+
 # change print statements to logging:
 # https://www.youtube.com/watch?v=jxmzY9soFXg, last 5 min
 
