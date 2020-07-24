@@ -2,16 +2,7 @@
 # python dirwatcher.py  <directory to watch>  <magic text to search> -e .txt -1 5
 # python dirwatcher.py --dir watchdir --ext "txt" --magic magic
 '''
-s̶i̶g̶n̶a̶l̶ ̶h̶a̶n̶d̶l̶e̶r̶
-f̶u̶n̶c̶t̶i̶o̶n̶ ̶t̶o̶ ̶l̶o̶o̶k̶ ̶f̶o̶r̶ ̶m̶a̶g̶i̶c̶ ̶t̶e̶x̶t̶
--logging where found text (currently logging kill signal)
-̶t̶i̶m̶e̶s̶t̶a̶m̶p̶
-f̶i̶g̶u̶r̶e̶ ̶o̶u̶t̶ ̶h̶o̶w̶ ̶t̶o̶ ̶w̶a̶t̶c̶h̶ ̶a̶ ̶d̶i̶r̶e̶c̶t̶o̶r̶y̶
-̶e̶x̶c̶e̶p̶t̶i̶o̶n̶ ̶h̶a̶n̶d̶l̶i̶n̶g̶ ̶t̶o̶ ̶k̶e̶e̶p̶ ̶r̶u̶n̶n̶i̶n̶g̶
-̶ ̶ ̶ ̶ ̶w̶h̶e̶n̶ ̶n̶o̶ ̶d̶i̶r̶e̶c̶t̶o̶r̶y̶ ̶f̶o̶u̶n̶d̶
-̶a̶r̶g̶p̶a̶r̶s̶e̶,̶ ̶a̶d̶d̶ ̶a̶r̶g̶u̶m̶e̶n̶t̶s̶
-s̶h̶u̶t̶d̶o̶w̶n̶ ̶a̶n̶d̶ ̶s̶t̶a̶r̶t̶ ̶u̶p̶ ̶b̶a̶n̶n̶e̶r̶s̶
-tests
+tests -- get everything working
 gitignore -- no log or test files, etc.
 flake8, docstrings, etc.
 
@@ -22,6 +13,7 @@ AttributeError: partially initialized module 'logging' has no attribute 'getLogg
 (most likely due to a circular import)
 '''
 
+
 import signal
 import time
 import logging
@@ -29,7 +21,6 @@ import os
 import datetime
 import argparse
 import sys
-
 exit_flag = False
 
 logger = logging.getLogger(__name__)
@@ -49,15 +40,29 @@ def signal_handler(sig_num, frame):
     global exit_flag  # false, keeps running program
     logger.debug(f"Handling signal: {signal.Signals(sig_num).name}")
     exit_flag = True
-    # call this function when program gets a signal (see below)
 
-    # log the associated signal name
-
-    #  need function to watch directory****
 
 # poll with os.listdir
 # keep a list of all files looking at. add new files to be watched?
 # then go through each file
+
+def find_magic_text(filename, last_position, magic_text):
+    """
+   Function to look for magic text
+   Searches for magic text in file (from last line position)
+   logging line number where found
+
+    """
+    line_number = 0
+    with open(filename) as file:
+        file = file.readlines()
+        for line_number, line in enumerate(file):
+            if line_number >= last_position:
+                if magic_text in line:
+                    logger.info(
+                        f'Magic text: "{magic_text}", found at line: {line_number + 1} in: {filename}')
+    return line_number + 1
+# don't log the occurrence of magic text again
 
 
 def watch_directory(directory, magic, extension, interval):
@@ -89,43 +94,9 @@ def watch_directory(directory, magic, extension, interval):
         for file in files_list:
             full_path = os.path.join(directory, file)
             files_list[file] = find_magic_text(
-                full_path, text, files_list[file])
+                full_path, files_list[file], magic)
     # put to sleep before running through all over again
         time.sleep(interval)
-
-
-'''
-#timestamps for when file is deleted
-#also for when directory is deleted!
-And for when magic is found
-
-# dictionary.
-# The keys = filenames
-# values = last line position -- each entry, file and last line
-open, readlines. read line by line
-
-# Keep track of the last position.
-
-'''
-
-
-def find_magic_text(filename, last_position, magic_text):
-    """
-   Function to look for magic text
-   Searches for magic text in file (from last line position)
-   logging line number where found
-
-    """
-    line_number = 0
-    with open(filename) as file:
-        for line_number, line in enumerate(file):
-            if line_number >= last_position:
-                if magic_text in line:
-                    logger.info(
-                        f'Magic text: "{magic_text}", found at line: {line_number + 1} in: {filename}')
-    return line_number + 1
-# don't log the occurrence of magic text again
-# add a time stamp!
 
 
 def create_parser():
@@ -156,7 +127,7 @@ def main():
         f"\n{40 * '-'}\n Running: {__file__}\n Started on: {app_start_time.isoformat()}\n{40 * '-'}")
     while not exit_flag:
         try:
-            print(f"[{os.getpid()}] Tick...")
+            print(f"Process number: {os.getpid()} Checking...")
             # call my directory watching function..
             watch_directory(args.dir, args.magic, args.ext, args.int)
         except FileNotFoundError:
