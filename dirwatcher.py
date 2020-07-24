@@ -1,18 +1,4 @@
-# to run program:
-# python dirwatcher.py  <directory to watch>  <magic text to search> -e .txt -1 5
-# python dirwatcher.py --dir watchdir --ext "txt" --magic magic
-'''
-tests -- get everything working
-gitignore -- no log or test files, etc.
-flake8, docstrings, etc.
-
-
-when using logging in more than one file per directory
-why? what's going on there?
-AttributeError: partially initialized module 'logging' has no attribute 'getLogger'
-(most likely due to a circular import)
-'''
-
+__author__ = 'pokeyjess, help from demos, Google searches, tips from Justin'
 
 import signal
 import time
@@ -20,39 +6,53 @@ import logging
 import os
 import datetime
 import argparse
-import sys
 exit_flag = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s:%(levelname)s:%(message)s', datefmt='%Y-%m-%d &%H:%M:%S')
-# timestamp
+                    format='%(asctime)s:%(levelname)s:%(message)s',
+                    datefmt='%Y-%m-%d &%H:%M:%S')
 
 
 def signal_handler(sig_num, frame):
     """
-    This is a handler for SIGTERM and SIGINT. Other signals can be mapped here as well (SIGHUP?)
-    Basically, it just sets a global flag, and main() will exit its loop if the signal is trapped.
-    :param sig_num: The integer signal number that was trapped from the OS.
-    :param frame: Not used
-    :return None
+    Sets global flag, and handles SIGTERM and SIGINT signals.
+    Will exit the loop if signal is detected.
     """
-    global exit_flag  # false, keeps running program
+    global exit_flag
     logger.debug(f"Handling signal: {signal.Signals(sig_num).name}")
     exit_flag = True
 
 
-# poll with os.listdir
-# keep a list of all files looking at. add new files to be watched?
-# then go through each file
+def watch_directory(directory, magic, extension, interval):
+    """"
+    Watches a directory, looking for files with provided extension.
+    Logs when file found, and if/when it is later deleted
+    """
+    files_list = {}
+    logger.info(
+        f'Watching "{directory}" for "{extension}" files, with "{magic}"')
+    while not exit_flag:
+        for file in os.listdir(directory):
+            if file.endswith(str(extension)) and file not in files_list:
+                files_list[file] = 0
+                logger.info(f'Now watching: {file}')
+        for file in list(files_list):
+            if file not in os.listdir(directory):
+                files_list.pop(file)
+                logger.info(f'The file {file} has been deleted')
+        for file in files_list:
+            full_path = os.path.join(directory, file)
+            files_list[file] = find_magic_text(
+                full_path, files_list[file], magic)
+        time.sleep(interval)
+
 
 def find_magic_text(filename, last_position, magic_text):
     """
-   Function to look for magic text
-   Searches for magic text in file (from last line position)
-   logging line number where found
-
-    """
+   Searches for provided 'magic' text in file (from last line position)
+   Logs the line number where found
+   """
     line_number = 0
     with open(filename) as file:
         file = file.readlines()
@@ -60,51 +60,19 @@ def find_magic_text(filename, last_position, magic_text):
             if line_number >= last_position:
                 if magic_text in line:
                     logger.info(
-                        f'Magic text: "{magic_text}", found at line: {line_number + 1} in: {filename}')
+                        f'"{magic_text}" at: {line_number + 1} in: {filename}'
+                    )
     return line_number + 1
-# don't log the occurrence of magic text again
-
-
-def watch_directory(directory, magic, extension, interval):
-    """"Watches a directory, looking for files
-    Then checks files for a "magic" text provided on command line
-    """
-    # create dictionary
-    files_list = {}
-    # log what it's doing
-    logger.info(
-        f'Watching "{directory}" to see if files with a "{extension}" extension contain "{magic}"')
-    # loop through directory, check for file/extension
-    # add files to dictionary
-    # and log now watching the file
-    while not exit_flag:
-        for file in os.listdir(directory):
-            if file.endswith(str(extension)) and file not in files_list:
-                files_list[file] = 0
-                logger.info(f'Now watching: {file}')
-    # remove files that no longer exist
-    # log that has been deleted
-    # add time stamp!
-        for file in list(files_list):
-            if file not in os.listdir(directory):
-                files_list.pop(file)
-                logger.info(f'The file {file} has been deleted')
-    # loop through files, look for text.
-    # log if found (function find_magic_text does that)
-        for file in files_list:
-            full_path = os.path.join(directory, file)
-            files_list[file] = find_magic_text(
-                full_path, files_list[file], magic)
-    # put to sleep before running through all over again
-        time.sleep(interval)
 
 
 def create_parser():
-    """creates command line arguments"""
+    """
+    Creates command line arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', help="Directory to watch")
     parser.add_argument('--ext', help="File extension to filter on")
-    parser.add_argument('--int', default=1.0,
+    parser.add_argument('--int', type=float, default=1.0,
                         help="Polling interval")
     parser.add_argument('--magic', help="Magic text to look for")
     return parser
@@ -114,35 +82,33 @@ app_start_time = datetime.datetime.now()
 
 
 def main():
+    """
+    Uses exception handler to keep the program running.
+    Displays starting and ending banners
+    """
     parser = create_parser()
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    # Now my signal_handler will get called if OS sends
-    # either of these to my process.
-# startup banner:
 
     logger.info(
-        f"\n{40 * '-'}\n Running: {__file__}\n Started on: {app_start_time.isoformat()}\n{40 * '-'}")
+        f'''\n{40 * '-'}\n Running: {__file__}\n \
+Started on: {app_start_time.isoformat()}\n{40 * '-'}''')
     while not exit_flag:
         try:
-            print(f"Process number: {os.getpid()} Checking...")
-            # call my directory watching function..
+            print(f"Process number: {os.getpid()} now running...")
             watch_directory(args.dir, args.magic, args.ext, args.int)
         except FileNotFoundError:
             logger.warning("Did not find that directory")
-            # raise
         except Exception as e:
             logger.error(f'Unhandeled exception:{e}')
         time.sleep(3.0)
     uptime = datetime.datetime.now() - app_start_time
     logger.info(
-        f"\n{40 * '-'}\n Stopped: {__file__}\n Uptime was: {str(uptime)}\n{40 * '-'}")
+        f'''\n{40 * '-'}\n Stopped: {__file__}\n \
+Uptime was: {str(uptime)}\n{40 * '-'}''')
 
-
-# put a sleep inside my while loop so I don't peg the cpu usage at 100%
-# time.sleep(polling_interval)
 
 if __name__ == '__main__':
     main()
