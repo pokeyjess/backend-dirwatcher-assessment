@@ -30,8 +30,6 @@ def watch_directory(directory, magic, extension, interval):
     Logs when file found, and if/when it is later deleted
     """
     files_list = {}
-    logger.info(
-        f'Watching "{directory}" for "{extension}" files, with "{magic}"')
     while not exit_flag:
         for file in os.listdir(directory):
             if file.endswith(str(extension)) and file not in files_list:
@@ -70,11 +68,12 @@ def create_parser():
     Creates command line arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', help="Directory to watch")
-    parser.add_argument('--ext', help="File extension to filter on")
+    parser.add_argument('dir', help="Directory to watch")
+    parser.add_argument('--ext', default="txt",
+                        help="File extension to filter on")
     parser.add_argument('--int', type=float, default=1.0,
                         help="Polling interval")
-    parser.add_argument('--magic', help="Magic text to look for")
+    parser.add_argument('magic', help="Magic text to look for")
     return parser
 
 
@@ -91,7 +90,6 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
     logger.info(
         f'''\n{40 * '-'}\n Running: {__file__}\n \
 Started on: {app_start_time.isoformat()}\n{40 * '-'}''')
@@ -100,7 +98,7 @@ Started on: {app_start_time.isoformat()}\n{40 * '-'}''')
             print(f"Process number: {os.getpid()} now running...")
             watch_directory(args.dir, args.magic, args.ext, args.int)
         except FileNotFoundError:
-            logger.warning("Did not find that directory")
+            logger.warning(f"Did not find {args.dir}")
         except Exception as e:
             logger.error(f'Unhandeled exception:{e}')
         time.sleep(3.0)
