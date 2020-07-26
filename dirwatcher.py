@@ -6,6 +6,7 @@ import logging
 import os
 import datetime
 import argparse
+
 exit_flag = False
 
 logger = logging.getLogger(__name__)
@@ -93,9 +94,9 @@ def main():
     logger.info(
         f'''\n{40 * '-'}\n Running: {__file__}\n \
 Started on: {app_start_time.isoformat()}\n{40 * '-'}''')
+    print(f"Process number: {os.getpid()} now running...")
     while not exit_flag:
         try:
-            print(f"Process number: {os.getpid()} now running...")
             watch_directory(args.dir, args.magic, args.ext, args.int)
         except FileNotFoundError:
             logger.warning(f"Did not find {args.dir}")
